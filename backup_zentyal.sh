@@ -1,7 +1,9 @@
 #!/bin/bash
-# Version 1.0
-set -x
+# Version 1.1
+
 LOG="/var/log/rsnapshot.log"
+DEBUG=0
+
 
 date2stamp () {
         date --utc --date "$1" +%s
@@ -26,25 +28,50 @@ dateDiff (){
     echo $((diffSec/sec*abs))
 }
 
-
 function logThis {
         HOST="$1"
         mod="$2"
         output="$3"
         DATE=`date +%d/%b/%Y:%H:%M:%S`
         echo "[$DATE] $HOST - $mod: $output" >> $LOG
+        if [ $DEBUG ]; then echo "[$DATE] $HOST - $mod: $output"; fi
         }
+
 function runThis {
         HOST=$1
         MOD="$2"
         FILENAME="zentyal_backup.tar"
-#       COMMAND="/usr/share/zentyal/make-backup --config-backup; 'mv /var/lib/zentyal/conf/backups/* ./zentyal_backup.tar"
+#       COMMAND="/usr/share/ebox/ebox-make-backup --config-backup; 'mv /var/lib/ebox/conf/backups/* ./zentyal_backup.tar"
 
-        logThis $HOST $MOD "Starting Zentyal 2.2 configuration backup"
+        logThis $HOST $MOD "Starting Backup"
         if [ "localhost" = "$HOST" ]; then
-                ERROR=$( { /usr/share/zentyal/make-backup --config-backup;mv /var/lib/zentyal/conf/backups/* ./zentyal_backup.tar; RETURN=$?; } 2>&1 )
+                ERROR=$( { /usr/share/ebox/ebox-make-backup --config-backup; } 2>&1 )
+                EXITCODE="$?"
+                if [ "$EXITCODE" -gt 0 ]; then
+                        logThis $HOST $MOD "Error was: $ERROR. "
+                        RETURN=$EXITCODE
+                fi
+
+                ERROR=$( { mv /var/lib/ebox/conf/backups/* .; } 2>&1 )
+                EXITCODE="$?"
+                if [ "$EXITCODE" -gt 0 ]; then
+                        logThis $HOST $MOD "Error was: $ERROR. "
+                        RETURN=$EXITCODE
+                fi
         else
-                ERROR=$( { $SSH $HOST "/usr/share/zentyal/make-backup --config-backup"; scp $HOST /var/lib/zentyal/conf/backups/* .; mv ./* ./zentyal_backup.tar ; RETURN=$?; } 2>&1 )
+                ERROR=$( { ssh $HOST "/usr/share/ebox/ebox-make-backup --config-backup"; } 2>&1 )
+                EXITCODE="$?"
+                if [ "$EXITCODE" -gt 0 ]; then
+                        logThis $HOST $MOD "Error was: $ERROR. "
+                        RETURN="$EXITCODE"
+                fi
+                ERROR=$( { scp $HOST /var/lib/ebox/conf/backups/* . ; } 2>&1 )
+                EXITCODE="$?"
+                if [ "$EXITCODE" -gt 0 ]; then
+                        logThis $HOST $MOD "Error was: $ERROR. "
+                        RETURN="$EXITCODE"
+                fi
+
         fi
 
         if [ $RETURN ]; then
@@ -52,5 +79,9 @@ function runThis {
         fi
 
         logThis $HOST $MOD "Finished"
-        chmod 600 $FILENAME
+        chmod 600 *
 }
+
+runThis $1 "Zentyal_Backup"
+
+exit $RETURN
