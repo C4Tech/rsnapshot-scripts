@@ -49,6 +49,6 @@ function runThis {
                 logThis $HOST $MOD "ERROR command returned $RETURN"
         fi
 
-        logThis $HOST $MOD "Finnished"
+        logThis $HOST $MOD "Finished"
         chmod 600 $FILENAME
 }
