@@ -42,7 +42,7 @@ function runThis {
         if [ "localhost" = "$HOST" ]; then
                 ERROR=$( { /usr/share/zentyal/make-backup --config-backup;mv /var/lib/zentyal/conf/backups/* ./zentyal_backup.tar; RETURN=$?; } 2>&1 )
         else
-                ERROR=$( { $SSH $HOST "/usr/share/zentyal/make-backup --config-backup"; scp $HOST /var/lib/zentyal/conf/backups/* .; mv ./* ./zentyal_backup.tar ; RETURN=$$
+                ERROR=$( { $SSH $HOST "/usr/share/zentyal/make-backup --config-backup"; scp $HOST /var/lib/zentyal/conf/backups/* .; mv ./* ./zentyal_backup.tar ; RETURN=$?; } 2>&1 )
         fi
 
         if [ $RETURN ]; then
